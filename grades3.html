@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقييم اللاعبين</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Tajawal', sans-serif;
+      text-align: center;
+      direction: rtl;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    h1 {
+      color: #fff;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #result {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+      padding: 20px;
+    }
+    .player-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      padding: 30px;
+      width: 250px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .player-card:hover {
+      transform: translateY(-10px) scale(1.03);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+    .winner {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.4) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+    }
+    .second {
+      background: linear-gradient(135deg, rgba(192, 192, 192, 0.2) 0%, rgba(192, 192, 192, 0.4) 100%);
+      border: 1px solid rgba(192, 192, 192, 0.5);
+    }
+    .player-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #fff;
+    }
+    .player-average {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #4ade80;
+      margin: 15px 0;
+    }
+    .player-stats {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      margin-top: 10px;
+    }
+    .start-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      font-family: 'Tajawal', sans-serif;
+      font-weight: 500;
+    }
+    .start-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    .start-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>تقييم اللاعبين لبعضهم</h1>
+  <button onclick="start()" class="start-btn">ابدأ التقييم</button>
+
+  <div id="result"></div>
+
+  <script>
+    async function start() {
+      // إدخال عدد اللاعبين
+      const { value: count } = await Swal.fire({
+        title: 'كم عدد اللاعبين؟',
+        input: 'number',
+        inputPlaceholder: 'أدخل العدد',
+        inputValidator: (value) => {
+          if (!value || isNaN(value) || value < 2) return 'يجب إدخال رقم لا يقل عن 2';
+        },
+        confirmButtonText: 'التالي'
+      });
+
+      const playerCount = parseInt(count);
+      const players = [];
+
+      // إدخال أسماء اللاعبين
+      for (let i = 1; i <= playerCount; i++) {
+        const { value: name } = await Swal.fire({
+          title: `أدخل اسم اللاعب ${i}`,
+          input: 'text',
+          inputPlaceholder: 'اسم اللاعب',
+          inputValidator: (value) => {
+            if (!value) return 'الاسم مطلوب!';
+          },
+          confirmButtonText: 'التالي'
+        });
+
+        players.push({ name, grades: [], average: 0 });
+      }
+
+      // كل لاعب يقيّم الباقين
+      for (let i = 0; i < players.length; i++) {
+        const currentPlayer = players[i];
+        const otherPlayers = players.filter((_, idx) => idx !== i);
+
+        const inputsHtml = otherPlayers.map((player, index) => `
+          <label style="display:block; text-align:right; margin-bottom: 5px;">
+            ${player.name}:<br>
+            <input id="grade-${index}" type="number" step="any" min="1" max="10" class="swal2-input" placeholder="درجة من 1 إلى 10">
+          </label>
+        `).join('');
+
+        const { value: formValues } = await Swal.fire({
+          title: `دور ${currentPlayer.name} لتقييم الآخرين`,
+          html: inputsHtml,
+          confirmButtonText: 'إرسال التقييمات',
+          focusConfirm: false,
+          preConfirm: () => {
+            const values = [];
+            for (let j = 0; j < otherPlayers.length; j++) {
+              const val = document.getElementById(`grade-${j}`).value;
+              const num = parseFloat(val);
+              if (val.trim() === "") return Swal.showValidationMessage("يرجى تعبئة كل الدرجات");
+              if (isNaN(num) || num < 1 || num > 10) {
+                return Swal.showValidationMessage('يجب أن تكون الدرجات بين 1 و 10');
+              }
+              values.push(num);
+            }
+            return values;
+          }
+        });
+
+        // تسجيل الدرجات للآخرين
+        formValues.forEach((grade, idx) => {
+          otherPlayers[idx].grades.push(grade);
+        });
+      }
+
+      // حساب المتوسطات
+      players.forEach(player => {
+        const sum = player.grades.reduce((a, b) => a + b, 0);
+        player.average = player.grades.length > 0 ? (sum / player.grades.length).toFixed(2) : 0;
+      });
+
+      // ترتيب اللاعبين حسب المتوسط
+      players.sort((a, b) => b.average - a.average);
+
+      // عرض النتائج
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = '';
+
+      players.forEach((player, index) => {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+
+        if (index === 0) card.classList.add('winner');
+        else if (index === 1) card.classList.add('second');
+
+        card.innerHTML = `
+          <div class="player-name">${player.name} ${index === 0 ? '🏆' : index === 1 ? '🥈' : ''}</div>
+          <div class="player-average">${player.average}</div>
+          <div class="player-stats">المتوسط من ${player.grades.length} تقييمات</div>
+        `;
+
+        resultDiv.appendChild(card);
+      });
+
+      // إعلان الفائز
+      Swal.fire({
+        icon: 'success',
+        title: `🏆 الفائز: ${players[0].name}`,
+        text: `🎖️ الثاني: ${players[1].name}`,
+        confirmButtonText: 'ممتاز!'
+      });
+    }
+  </script>
+
+</body>
+</html>
