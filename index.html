@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Asmaa | Student Services Developer</title>
+  <style>
+    :root {
+      --primary: #4e6eff;
+      --bg: #f5f7fa;
+      --text: #1a1a1a;
+      --card: #fff;
+      --accent: #ffd66b;
+    }
+    [data-theme="dark"] {
+      --bg: #0e0e0e;
+      --text: #f0f0f0;
+      --card: #1e1e1e;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+
+    header h1 {
+      margin-bottom: 0.5rem;
+      font-size: 2rem;
+    }
+
+    header p {
+      font-style: italic;
+    }
+
+    .toggle-theme {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: 2px solid white;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    section {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .title {
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .projects .project {
+      border-left: 4px solid var(--primary);
+      padding-left: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: gray;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <header>
+    <button class="toggle-theme" onclick="toggleTheme()">🌙</button>
+    <h1>Asmaa Mutie</h1>
+    <p>Student Services Web Developer | Laravel & Frontend | Based in South Yemen</p>
+  </header>
+
+  <section>
+    <div class="card">
+      <h2 class="title">💡 About Me</h2>
+      <p>I’m a passionate software engineering student with a strong focus on building academic tools and services. I specialize in Laravel, database management, frontend development, and UI/UX using Figma. I'm the creator of <strong>Student Hub</strong> and team leader of <strong>Nova Team</strong>.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="title">🚀 My Projects</h2>
+      <div class="projects">
+        <div class="project">
+          <h3>Student Hub</h3>
+          <p>A Laravel-based platform for students to request printing, reports, slides, programming help, and personal courses. Includes authentication, testimonials, and dashboard management.</p>
+        </div>
+        <div class="project">
+          <h3>Team Dashboard</h3>
+          <p>A full admin interface to manage Nova Team members including add/edit/delete with photo upload (drag & drop), responsive UI, and dynamic data using Laravel & Blade.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="title">🛠 Skills</h2>
+      <ul>
+        <li>Laravel & PHP</li>
+        <li>MySQL & Database Design</li>
+        <li>HTML, CSS, JavaScript</li>
+        <li>Figma & UI Prototyping</li>
+        <li>Project Planning & SDLC (Waterfall, etc.)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2 class="title">📫 Contact</h2>
+      <p>Email: <a href="mailto:you@example.com">you@example.com</a></p>
+      <p>GitHub: <a href="#">github.com/yourusername</a></p>
+      <p>LinkedIn: <a href="#">linkedin.com/in/yourusername</a></p>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 Asmaa Mutie · Built with 💙 and clean code
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const body = document.body;
+      const isDark = body.getAttribute('data-theme') === 'dark';
+      body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    }
+  </script>
+</body>
+</html>
