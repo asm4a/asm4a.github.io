@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Local Multiplayer Bluff Game</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; }
+  h2, h3 { margin-top: 20px; }
+  button { margin: 5px 0; display: block; padding: 8px; width: 100%; font-size: 16px; }
+  input { padding: 8px; width: 100%; font-size: 16px; box-sizing: border-box; }
+  .hidden { display: none; }
+  #leaderboard ol { padding-left: 20px; }
+  .error { color: red; }
+</style>
+</head>
+<body>
+
+<h1>Local Multiplayer Bluff Game</h1>
+
+<div id="setup">
+  <h2>Setup Players</h2>
+  <input id="playerNameInput" placeholder="Enter player name" />
+  <button id="addPlayerBtn">Add Player</button>
+  <ul id="playerList"></ul>
+  <button id="startGameBtn" disabled>Start Game</button>
+</div>
+
+<div id="game" class="hidden">
+
+  <h2 id="questionText"></h2>
+
+  <div id="answerPhase">
+    <h3>Player <span id="currentPlayerName"></span>, write your fake answer:</h3>
+    <input id="fakeAnswerInput" placeholder="Write your fake answer here" />
+    <p class="error" id="answerError"></p>
+    <button id="submitFakeAnswerBtn">Submit Answer</button>
+  </div>
+
+  <div id="votingPhase" class="hidden">
+    <h3>All answers:</h3>
+    <div id="answersContainer"></div>
+    <h3>Player <span id="votingPlayerName"></span>, select the correct answer:</h3>
+    <p class="error" id="voteError"></p>
+  </div>
+
+  <div id="resultsPhase" class="hidden">
+    <h3>Round Results:</h3>
+    <div id="roundResults"></div>
+    <h3>Leaderboard:</h3>
+    <div id="leaderboard"></div>
+    <button id="nextRoundBtn">Next Round</button>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  // Questions database
+  const questions = [
+    { id: 1, text: "What is the capital of France?", correct: "Paris" },
+    { id: 2, text: "What element has the chemical symbol 'O'?", correct: "Oxygen" },
+    { id: 3, text: "Who painted the Mona Lisa?", correct: "Leonardo da Vinci" },
+    { id: 4, text: "What is the largest planet in the solar system?", correct: "Jupiter" },
+  ];
+
+  // Game state
+  let players = [];
+  let currentQuestion = null;
+  let fakeAnswers = []; // { playerIndex, text }
+  let allAnswers = [];  // shuffled including correct answer
+  let currentFakeAnswerPlayer = 0;
+  let currentVotingPlayer = 0;
+  let votes = []; // votes[playerIndex] = chosenAnswerIndex
+  let points = [];
+
+  // DOM Elements
+  const setupDiv = document.getElementById('setup');
+  const playerNameInput = document.getElementById('playerNameInput');
+  const addPlayerBtn = document.getElementById('addPlayerBtn');
+  const playerList = document.getElementById('playerList');
+  const startGameBtn = document.getElementById('startGameBtn');
+
+  const gameDiv = document.getElementById('game');
+  const questionText = document.getElementById('questionText');
+  const answerPhase = document.getElementById('answerPhase');
+  const currentPlayerNameSpan = document.getElementById('currentPlayerName');
+  const fakeAnswerInput = document.getElementById('fakeAnswerInput');
+  const answerError = document.getElementById('answerError');
+  const submitFakeAnswerBtn = document.getElementById('submitFakeAnswerBtn');
+
+  const votingPhase = document.getElementById('votingPhase');
+  const answersContainer = document.getElementById('answersContainer');
+  const votingPlayerNameSpan = document.getElementById('votingPlayerName');
+  const voteError = document.getElementById('voteError');
+
+  const resultsPhase = document.getElementById('resultsPhase');
+  const roundResults = document.getElementById('roundResults');
+  const leaderboardDiv = document.getElementById('leaderboard');
+  const nextRoundBtn = document.getElementById('nextRoundBtn');
+
+  // Setup players
+  function refreshPlayerList() {
+    playerList.innerHTML = '';
+    players.forEach((p, i) => {
+      const li = document.createElement('li');
+      li.textContent = p;
+      playerList.appendChild(li);
+    });
+    startGameBtn.disabled = players.length < 2;
+  }
+
+  addPlayerBtn.onclick = () => {
+    const name = playerNameInput.value.trim();
+    if (name && !players.includes(name)) {
+      players.push(name);
+      playerNameInput.value = '';
+      refreshPlayerList();
+    } else if (players.includes(name)) {
+      alert('Player name already exists!');
+    }
+  };
+
+  startGameBtn.onclick = () => {
+    setupDiv.classList.add('hidden');
+    gameDiv.classList.remove('hidden');
+    startNewRound();
+  };
+
+  // Start new round
+  function startNewRound() {
+    currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+    fakeAnswers = [];
+    allAnswers = [];
+    votes = new Array(players.length).fill(null);
+    currentFakeAnswerPlayer = 0;
+    currentVotingPlayer = 0;
+    answerError.textContent = '';
+    voteError.textContent = '';
+
+    questionText.textContent = currentQuestion.text;
+
+    // Show answer phase
+    answerPhase.classList.remove('hidden');
+    votingPhase.classList.add('hidden');
+    resultsPhase.classList.add('hidden');
+
+    currentPlayerNameSpan.textContent = players[currentFakeAnswerPlayer];
+    fakeAnswerInput.value = '';
+    fakeAnswerInput.disabled = false;
+    submitFakeAnswerBtn.disabled = false;
+    fakeAnswerInput.focus();
+  }
+
+  // Submit fake answer handler
+  submitFakeAnswerBtn.onclick = () => {
+    const answer = fakeAnswerInput.value.trim();
+    if (!answer) {
+      answerError.textContent = 'Answer cannot be empty!';
+      return;
+    }
+    if (answer.toLowerCase() === currentQuestion.correct.toLowerCase()) {
+      answerError.textContent = 'You cannot submit the correct answer!';
+      return;
+    }
+
+    // Save fake answer
+    fakeAnswers.push({ playerIndex: currentFakeAnswerPlayer, text: answer });
+    answerError.textContent = '';
+
+    // Move to next player or voting phase
+    currentFakeAnswerPlayer++;
+    if (currentFakeAnswerPlayer < players.length) {
+      currentPlayerNameSpan.textContent = players[currentFakeAnswerPlayer];
+      fakeAnswerInput.value = '';
+      fakeAnswerInput.focus();
+    } else {
+      // All fake answers in, add correct answer
+      allAnswers = fakeAnswers.slice();
+      allAnswers.push({ playerIndex: null, text: currentQuestion.correct, isCorrect: true });
+
+      // Shuffle answers
+      allAnswers = allAnswers
+        .map(a => ({ ...a, sortKey: Math.random() }))
+        .sort((a,b) => a.sortKey - b.sortKey)
+        .map(({ sortKey, ...rest }) => rest);
+
+      // Go to voting phase
+      answerPhase.classList.add('hidden');
+      votingPhase.classList.remove('hidden');
+      currentVotingPlayer = 0;
+      voteError.textContent = '';
+      renderVoting();
+    }
+  };
+
+  // Render voting buttons for current voting player
+  function renderVoting() {
+    votingPlayerNameSpan.textContent = players[currentVotingPlayer];
+    answersContainer.innerHTML = '';
+
+    allAnswers.forEach((answer, index) => {
+      const btn = document.createElement('button');
+      btn.textContent = answer.text;
+      btn.onclick = () => {
+        // Player cannot vote their own answer (except correct answer has playerIndex=null)
+        if (answer.playerIndex === currentVotingPlayer) {
+          voteError.textContent = 'You cannot vote your own answer!';
+          return;
+        }
+        voteError.textContent = '';
+        votes[currentVotingPlayer] = index;
+        currentVotingPlayer++;
+        if (currentVotingPlayer < players.length) {
+          renderVoting();
+        } else {
+          // Voting done, show results
+          showResults();
+        }
+      };
+      answersContainer.appendChild(btn);
+    });
+  }
+
+  // Show results & update leaderboard
+  function showResults() {
+    votingPhase.classList.add('hidden');
+    resultsPhase.classList.remove('hidden');
+
+    // Initialize points array if empty
+    if (points.length === 0) {
+      points = new Array(players.length).fill(0);
+    }
+
+    // Tally points
+    // +1 point for each player fooled by your fake answer
+    // +1 point for selecting the correct answer
+    // Find correct answer index
+    const correctIndex = allAnswers.findIndex(a => a.isCorrect);
+
+    // For each vote:
+    votes.forEach((chosenIndex, voterIndex) => {
+      if (chosenIndex === correctIndex) {
+        // Voter gets 1 point
+        points[voterIndex]++;
+      } else {
+        // Owner of fake answer gets 1 point
+        const owner = allAnswers[chosenIndex].playerIndex;
+        if (owner !== null && owner !== undefined) {
+          points[owner]++;
+        }
+      }
+    });
+
+    // Show round votes
+    let resultsHTML = '<ul>';
+    votes.forEach((voteIndex, voterIndex) => {
+      const voterName = players[voterIndex];
+      const votedAnswer = allAnswers[voteIndex].text;
+      resultsHTML += `<li><b>${voterName}</b> voted for: "${votedAnswer}"</li>`;
+    });
+    resultsHTML += '</ul>';
+    roundResults.innerHTML = resultsHTML;
+
+    // Show leaderboard
+    let leaderboardHTML = '<ol>';
+    const leaderboard = players.map((name, idx) => ({ name, points: points[idx] }));
+    leaderboard.sort((a,b) => b.points - a.points);
+    leaderboard.forEach(p => {
+      leaderboardHTML += `<li>${p.name}: ${p.points} points</li>`;
+    });
+    leaderboardHTML += '</ol>';
+    leaderboardDiv.innerHTML = leaderboardHTML;
+  }
+
+  nextRoundBtn.onclick = () => {
+    startNewRound();
+  };
+
+  // Initial setup UI show
+  refreshPlayerList();
+})();
+</script>
+
+</body>
+</html>
